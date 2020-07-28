@@ -3,6 +3,7 @@ import IngredientList from './IngredientList';
 import IngredientForm from './IngredientForm';
 import Search from './Search';
 import ErrorModal from '../UI/ErrorModal';
+import useHttp from '../../hooks/http';
 
 const ingredientReducer = (currentIngredients, action) => {
   switch(action.type){
@@ -17,64 +18,42 @@ const ingredientReducer = (currentIngredients, action) => {
   }
 }
 
-const httpReducer = (prevHttpState, action) => {
-  switch(action.type){
-    case 'SEND':
-      return { loading: true, error: null};
-    case 'RESPONSE':
-      return { ...prevHttpState, loading: false};
-    case 'ERROR':
-      return {loading: false, error: action.errorData}
-    case 'CLEAR':
-      return {...prevHttpState, error: null}
-    default:
-      throw new Error('Should not be here!');
-  }
-}
-
 const Ingredients = () => {
  const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
- const [httpState, dispatchHttp] = useReducer(httpReducer, {loading: false, error: null});
+ const {isLoading, error, data, sendRequest} = useHttp();
 
   useEffect(() => {
     console.log('RENDERING INGREDIENTS', userIngredients);
   }, [userIngredients]);
 
   const filteredIngredientsHandler = useCallback(filteredIngredients => {
-    dispatch({ type: 'SET', ingredients: filteredIngredients});
+    //dispatch({ type: 'SET', ingredients: filteredIngredients});
   }, [])
 
   const addIngredientHandler = useCallback(ingredient => {
-    dispatchHttp({type: 'SEND'});
-    fetch('https://react-hooks-update-409ea.firebaseio.com/ingredients.json', {
-      method: 'POST',
-      body: JSON.stringify({ingredient}),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }).then(response => {
-      dispatchHttp({type: 'RESPONSE'});
-      return response.json();
-    }).then(responseData => {
-      dispatch({ type: 'ADD',  ingredient: {id: responseData.name, ...ingredient}
-    });
-  });
+    // dispatchHttp({type: 'SEND'});
+    // fetch('https://react-hooks-update-409ea.firebaseio.com/ingredients.json', {
+    //   method: 'POST',
+    //   body: JSON.stringify({ingredient}),
+    //   headers: {
+    //     'Content-Type': 'application/json'
+    //   }
+    // }).then(response => {
+    //   dispatchHttp({type: 'RESPONSE'});
+    //   return response.json();
+    // }).then(responseData => {
+    //   dispatch({ type: 'ADD',  ingredient: {id: responseData.name, ...ingredient}
+    // });
+  //});
 }, [])
 
   const removeIngredientHandler = useCallback(ingredientId => {
-    dispatchHttp({type: 'SEND'});
-    fetch(`https://react-hooks-update-409ea.firebaseio.com/ingredients/${ingredientId}.json`, {
-      method: 'DELETE'
-      }).then(response => {
-        dispatchHttp({type: 'RESPONSE'});
-        dispatch({ type: 'DELETE',  id: ingredientId});
-      }).catch(error => {
-        dispatchHttp({type: 'ERROR'});
-      })
-  }, [])
+    sendRequest(`https://react-hooks-update-409ea.firebaseio.com/ingredients/${ingredientId}.json`,
+     'DELETE');
+  }, [sendRequest])
 
   const clearError = useCallback(() => {
-    dispatchHttp({type: 'CLEAR'});
+    // dispatchHttp({type: 'CLEAR'});
 
   }, []);
 
@@ -89,8 +68,8 @@ const Ingredients = () => {
 
   return (
     <div className="App">
-      {httpState.error && <ErrorModal onClose={clearError}>{httpState.error}</ErrorModal>}
-      <IngredientForm onAddIngredient={addIngredientHandler} loading={httpState.loading}/>
+      {error && <ErrorModal onClose={clearError}>{error}</ErrorModal>}
+      <IngredientForm onAddIngredient={addIngredientHandler} loading={isLoading}/>
       <section>
         <Search onLoadIngredients={filteredIngredientsHandler}/>
         {ingredientList}
