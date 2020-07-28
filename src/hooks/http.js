@@ -1,5 +1,13 @@
 import {useReducer, useCallback} from 'react';
 
+const initialState = {
+    loading: false, 
+    error: null, 
+    data: null,
+    extra: null,
+    identifier: null
+}
+
 const httpReducer = (prevHttpState, action) => {
     switch(action.type){
       case 'SEND':
@@ -17,22 +25,20 @@ const httpReducer = (prevHttpState, action) => {
             data: action.responseData, 
             extra: action.extra};
       case 'ERROR':
-        return {loading: false, error: action.errorData}
+        return {loading: false, error: action.errorData}   
       case 'CLEAR':
-        return {...prevHttpState, error: null}
-      default:
+        return initialState
+        default:
         throw new Error('Should not be here!');
     }
   }
 
 const useHttp = () => {
-    const [httpState, dispatchHttp] = useReducer(httpReducer, {
-        loading: false, 
-        error: null, 
-        data: null,
-        extra: null,
-        identifier: null
-    });
+    const [httpState, dispatchHttp] = useReducer(httpReducer, initialState);
+
+    const clear = useCallback(() => 
+        dispatchHttp({type: 'CLEAR'}), []
+    );
 
 const sendRequest = useCallback((url, method, body, reqExtra, reqIdentifier) => {    
     dispatchHttp({type: 'SEND', identifier: reqIdentifier});   
@@ -58,8 +64,10 @@ const sendRequest = useCallback((url, method, body, reqExtra, reqIdentifier) => 
         error: httpState.error,
         sendRequest: sendRequest,
         reqExtra: httpState.extra,
-        reqIdentifier: httpState.identifier
+        reqIdentifier: httpState.identifier,
+        clear: clear 
     };
 };
+
 
 export default useHttp;
